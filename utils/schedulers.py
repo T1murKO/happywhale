@@ -5,7 +5,7 @@ def ramp_scheduler(num_epoch, batch_size, start_epoch=0):
     lr_min     = 0.000001
     lr_ramp_ep = 4
     lr_sus_ep  = 0
-    lr_decay   = 0.9
+    lr_decay   = 0.92
     
     def get_lr(epoch):
         if epoch < lr_ramp_ep:

@@ -1,6 +1,6 @@
-from torchvision.models import efficientnet_b5
+from torchvision.models import efficientnet_b6
 from torch import nn, optim
-from loss import ArcFace
+from loss import ArcFace, AdaCos
 from utils import ramp_scheduler
 import torch
 from models import Model
@@ -20,20 +20,20 @@ class Config:
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
-    csv_path = ''
-    images_path = ''
+    csv_path = '/content/happywhale/data/train.csv'
+    images_path = '/content/train_images_528'
     # Model settings
     
     embed_dim = 512
-    input_dim = (456, 456)
-    class_num = 15000
+    input_dim = (528, 456)
+    class_num = 15587
     
     num_epoch = 20
     start_epoch = 0
-    batch_size = 32
+    batch_size = 6
     
     
-    backbone_ = efficientnet_b5
+    backbone_ = efficientnet_b6
     # Remove last 2 layers of pooling and dense
     backbone = nn.Sequential(*(list(backbone_(pretrained=True).children())[:-2]))
     
@@ -41,11 +41,10 @@ class Config:
     pooling = GeM()
     
     # Classification head
-    head = ArcFace(embed_dim, class_num, s=30., m=0.5)
+    head = AdaCos(embed_dim, class_num, fixed_scale=False)
     
     # Training loss
     loss = nn.CrossEntropyLoss()
-    
     
     model = Model(class_num, backbone, pooling, head, embed_dim=embed_dim).to(device)
     
@@ -54,12 +53,12 @@ class Config:
     
     optimizer = optim.Adam(model.parameters(), lr=schedule[0])
     
-    train_transforms = get_augmentation_list(input_dim)
+    train_transforms = get_augmentation_list(input_size=input_dim)
     
     
     # Save path
     
-    save_path = '/'
+    save_path = '/content/drive/MyDrive/effnetb6/'
     
     
     

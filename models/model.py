@@ -2,14 +2,14 @@ import torch
 from torch import nn
 import math
 import torch.nn.functional as F
-from .zoo import get_backbone, get_pooling
+# from .zoo import get_backbone, get_pooling
 from loss import AdaCos, ArcFace
 
 
 class Model(nn.Module):
-    def __init__(self, num_classes, backbone, pooling, head, embed_dim=512):
+    def __init__(self, num_classes, backbone, pooling, head, embed_dim=512, backbone_dim=2304):
         super(Model, self).__init__()
-        self.backbone, backbone_dim = backbone
+        self.backbone = backbone
         self.pool = pooling
         self.head = head
         
