@@ -22,14 +22,16 @@ class Config:
     
     csv_path = '/content/happywhale/data/train.csv'
     images_path = '/content/train_images_528'
+    save_path = '/content/drive/MyDrive/effnetb6/'
+    load_path = '/content/drive/MyDrive/effnetb6/epoch_7/model.pth'
     # Model settings
     
     embed_dim = 512
-    input_dim = (528, 456)
+    input_dim = (528, 528)
     class_num = 15587
     
     num_epoch = 20
-    start_epoch = 0
+    start_epoch = 8
     batch_size = 6
     
     
@@ -56,10 +58,8 @@ class Config:
     train_transforms = get_augmentation_list(input_size=input_dim)
     
     
-    # Save path
-    
-    save_path = '/content/drive/MyDrive/effnetb6/'
-    
+    if start_epoch != 0:
+        model = torch.load(load_path).to(device)
     
     
     
