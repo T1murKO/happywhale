@@ -1,6 +1,6 @@
 from trainer import Trainer
 from configs import Config
-from utils import ImageDataset, get_augmentation_list
+from utils import MaskImageDataset, get_augmentation_list
 import pandas as pd
 from torch.utils.data import DataLoader
 
@@ -9,7 +9,7 @@ config = Config()
 data_csv = pd.read_csv(config.csv_path)
 img_data = config.images_path
 
-train_dataset = ImageDataset(data_csv,
+train_dataset = MaskImageDataset(data_csv,
                              img_data,
                              transform=config.train_transforms)
 

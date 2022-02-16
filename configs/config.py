@@ -1,4 +1,5 @@
 from torchvision.models import efficientnet_b6
+from models.senet import senet154
 from torch import nn, optim
 from loss import ArcFace, AdaCos
 from utils import ramp_scheduler
@@ -21,23 +22,23 @@ class Config:
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
     csv_path = '/content/happywhale/data/train.csv'
-    images_path = '/content/train_images_528'
-    save_path = '/content/drive/MyDrive/effnetb6/'
-    load_path = '/content/drive/MyDrive/effnetb6/epoch_7/model.pth'
+    images_path = '/content/train_images-256-256'
+    save_path = '/content/drive/MyDrive/senet154/'
+    load_path = None
     # Model settings
     
     embed_dim = 512
-    input_dim = (528, 528)
+    input_dim = (512, 512)
     class_num = 15587
     
     num_epoch = 20
-    start_epoch = 8
-    batch_size = 6
+    start_epoch = 0
+    batch_size = 8
     
     
-    backbone_ = efficientnet_b6
+    # backbone_ = efficientnet_b6
     # Remove last 2 layers of pooling and dense
-    backbone = nn.Sequential(*(list(backbone_(pretrained=True).children())[:-2]))
+    backbone = senet154(num_classes=class_num, inchannels=4, pretrained=None)
     
     # Type of pooling
     pooling = GeM()

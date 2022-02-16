@@ -19,7 +19,7 @@ def get_augmentation_list(input_size=(256, 256)):
                 )),
             iaa.Sometimes(0.15, iaa.Grayscale(alpha=(0.8,1.0))),
             ], random_order=True),
-            # iaa.size.Resize(input_size, interpolation='cubic')
+            iaa.size.Resize(input_size, interpolation='cubic')
         ]).augment_image,     
         T.ToTensor()
     ])
