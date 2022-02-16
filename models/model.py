@@ -7,7 +7,7 @@ from loss import AdaCos, ArcFace
 
 
 class Model(nn.Module):
-    def __init__(self, num_classes, backbone, pooling, head, embed_dim=512, backbone_dim=2304):
+    def __init__(self, num_classes, backbone, pooling, head, embed_dim=512, backbone_dim=1792):
         super(Model, self).__init__()
         self.backbone = backbone
         self.pool = pooling
