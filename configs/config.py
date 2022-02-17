@@ -1,4 +1,4 @@
-from torchvision.models import efficientnet_b6
+from torchvision.models import efficientnet_b5
 from models.senet import senet154
 from torch import nn, optim
 from loss import ArcFace, AdaCos
@@ -24,7 +24,7 @@ class Config:
     csv_path = '/content/happywhale/data/train.csv'
     images_path = '/content/train_images-256-256'
     save_path = '/content/drive/MyDrive/senet154/'
-    load_path = None
+    load_path = '/content/drive/MyDrive/effnetb5_2/epoch_16/model.pth'
     # Model settings
     
     embed_dim = 512
@@ -36,9 +36,10 @@ class Config:
     batch_size = 8
     
     
-    # backbone_ = efficientnet_b6
+    # backbone_ = efficientnet_b5
     # Remove last 2 layers of pooling and dense
-    backbone = senet154(num_classes=class_num, inchannels=4, pretrained=None)
+    backbone = torch.nn.Sequential(*(list(backbone_(pretrained=True).children())[:-2]))
+    # backbone = senet154(num_classes=class_num, inchannels=4, pretrained=None)
     
     # Type of pooling
     pooling = GeM()
