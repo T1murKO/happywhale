@@ -7,8 +7,8 @@ def get_augmentation_list(input_size=(256, 256)):
         iaa.Sequential([
             iaa.Sequential([
             iaa.Fliplr(0.5),
-            iaa.Sometimes(0.3, iaa.AverageBlur(k=(3,3))),
-            iaa.Sometimes(0.3, iaa.MotionBlur(k=(3,5))),
+            iaa.Sometimes(0.2, iaa.AverageBlur(k=(3,3))),
+            iaa.Sometimes(0.2, iaa.MotionBlur(k=(3,5))),
             iaa.Add((-10, 10), per_channel=0.5),
             iaa.Multiply((0.9, 1.1), per_channel=0.5),
             iaa.Sometimes(0.2, iaa.Affine(
@@ -17,7 +17,7 @@ def get_augmentation_list(input_size=(256, 256)):
                 shear=(-10,10),
                 rotate=(-10,10)
                 )),
-            iaa.Sometimes(0.15, iaa.Grayscale(alpha=(0.8,1.0))),
+            iaa.Sometimes(0.1, iaa.Grayscale(alpha=(0.8,1.0))),
             ], random_order=True),
             iaa.size.Resize(input_size, interpolation='cubic')
         ]).augment_image,     

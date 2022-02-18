@@ -1,8 +1,6 @@
 import torch
 from torch import nn
-import math
 import torch.nn.functional as F
-# from .zoo import get_backbone, get_pooling
 from loss import AdaCos, ArcFace
 
 
