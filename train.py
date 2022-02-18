@@ -29,6 +29,7 @@ if device.type == 'cuda':
     else:
         DISTRIBUTED = False
 
+
 if not os.path.exists(config.SAVE_PATH):
     os.mkdir(config.SAVE_PATH)
 
@@ -45,16 +46,16 @@ print('[INFO] Training config', json.dumps(model_config, indent=3, sort_keys=Tru
     
 data_csv = pd.read_csv(config.CSV_PATH)
 
-# train_transforms = get_augmentation_list(input_size=config.INPUT_DIM)
-# train_dataset = ImageDataset(data_csv,
-#                             config.IAMGES_PATH,
-#                             transform=train_transforms)
-train_dataset = DummyDataset(input_size=config.INPUT_DIM, num_samples=5000, channels_num=3)
-train_loader = DataLoader(train_dataset,
-                          batch_size=config.BATCH_SIZE,
-                          shuffle=True,
-                          num_workers=os.cpu_count(),
-                          pin_memory=True if device == 'cuda' else False)
+train_transforms = get_augmentation_list(input_size=config.INPUT_DIM)
+train_dataset = ImageDataset(data_csv,
+                            config.IAMGES_PATH,
+                            transform=train_transforms)
+# train_dataset = DummyDataset(input_size=config.INPUT_DIM, num_samples=5000, channels_num=3)
+# train_loader = DataLoader(train_dataset,
+#                           batch_size=config.BATCH_SIZE,
+#                           shuffle=True,
+#                           num_workers=os.cpu_count(),
+#                           pin_memory=True if device == 'cuda' else False)
 
 
 # ===  MODEL SETUP ===

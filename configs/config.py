@@ -10,17 +10,17 @@
 class config:
     SEED = 42
     
-    CSV_PATH = '/content/happywhale/data/train.csv'
-    IAMGES_PATH = '/content/train_images-256-256'
-    SAVE_PATH = '/content/seresnet50_baseline'
+    CSV_PATH = '/root/happywhale/data/train.csv'
+    IAMGES_PATH = '/root/cropped_train_images'
+    SAVE_PATH = '/root/effnetb6'
     MASK_PASS = None
     CROP_PASS = None
     
     EMBED_DIM = 512
-    INPUT_DIM = (528, 528)
+    INPUT_DIM = (512, 512)
     CLASS_NUM = 15587
     EPOCHES_NUM = 20
-    BATCH_SIZE = 10
+    BATCH_SIZE = 36
     
     IS_RESUME = False
     LOAD_PATH = None
@@ -30,7 +30,7 @@ class config:
     
     
     BACKBONE_NAME = 'effnetv1_b6'
-    BACKBONE_PARAMS = {'pretrained': False}
+    BACKBONE_PARAMS = {'pretrained': True}
     
     HEAD_NAME = 'adacos'
     HEAD_PARAMS = {'fixed_scale': False,
