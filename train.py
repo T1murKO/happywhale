@@ -70,7 +70,7 @@ model = Model(config.CLASS_NUM, backbone, pooling, head, embed_dim=config.EMBED_
 # === TRAINING SETUP ===
 
 criterion = nn.CrossEntropyLoss()
-schedule = get_scheduler(config.SCHEDULER_NAME)
+schedule = get_scheduler(config.SCHEDULER_NAME, config.BATCH_SIZE, config.SCHEDULER_PARAMS)
 
 optimizer = optim.Adam(model.parameters(), lr=schedule(0))
 
@@ -78,6 +78,8 @@ if config.IS_RESUME:
     model = torch.load(config.LOAD_PATH).to(device)
     print('[INFO] Model loaded from checkpoint', json.dumps(model_config, indent=3, sort_keys=True))
 
+if DISTRIBUTED:
+    model = torch.nn.DataParallel(model)
 
 # === START TRAINING
 

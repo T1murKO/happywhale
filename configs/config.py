@@ -41,5 +41,5 @@ class config:
     POOLING_PARAMS = {}
     
     SCHEDULER_NAME = 'ramp'
-    SCHEDULER_PARAMS = {'batch_size': BATCH_SIZE}
+    SCHEDULER_PARAMS = {}
     
