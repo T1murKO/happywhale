@@ -22,7 +22,7 @@ set_seed(config.SEED)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 if device.type == 'cuda':
     NUM_GPU = torch.cuda.device_count()
-    print(f'-- {NUM_GPU} GPU DETECTED --')
+    print(f'[INFO] number of GPUs found: {NUM_GPU}')
     if NUM_GPU > 1:
         DISTRIBUTED = True
         config.BATCH_SIZE = config.BATCH_SIZE * NUM_GPU
@@ -39,7 +39,7 @@ with open(os.path.join(config.SAVE_PATH + '/config.json'), 'w') as f:
 with open(os.path.join(config.SAVE_PATH + '/config.json'), 'r') as f:
     model_config = json.load(f)
 
-print('TRAINNG CONFIG:', print(json.dumps(parsed, indent=4, sort_keys=True)))
+print('[INFO] Training config', json.dumps(model_config, indent=3, sort_keys=True))
 
  # === DATA LOADING ===
     
@@ -76,6 +76,7 @@ optimizer = optim.Adam(model.parameters(), lr=schedule(0))
 
 if config.IS_RESUME:
     model = torch.load(config.LOAD_PATH).to(device)
+    print('[INFO] Model loaded from checkpoint', json.dumps(model_config, indent=3, sort_keys=True))
 
 
 # === START TRAINING
