@@ -40,8 +40,8 @@ class Trainer():
                 loss = self.criterion(logits,labels)
             
             self.optimizer.zero_grad()
-            self.scaler(loss).backward()
-            self.scaler.step(optimizer)
+            self.scaler.scale(loss).backward()
+            self.scaler.step(self.optimizer)
             self.scaler.update()
             
             epoch_loss += loss.item()
@@ -130,7 +130,7 @@ class Trainer():
         for i in range(self.start_epoch, epochs, 1):
             if save_path is not None:
                 
-                with open(save_path + 'train_log.txt', 'a') as f:
+                with open(join(save_path, 'train_log.txt'), 'a') as f:
                         f.write(f'---- EPOCH {i} ----\n')
                 
                 epoch_save_path = join(save_path, f'epoch_{i}/')

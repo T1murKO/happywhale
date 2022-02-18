@@ -1,13 +1,15 @@
 from utils.trainer import Trainer
-from configs import Config
+from configs import config
 import torch
 from torch import nn, optim
 import pandas as pd
+import os
+import json
 from utils import get_augmentation_list, \
                     ImageDataset, DummyDataset, \
                     set_seed
 from torch.utils.data import DataLoader
-import os
+
 from modules.zoo import get_backbone,\
                         get_pooling, \
                         get_head, \
@@ -15,8 +17,6 @@ from modules.zoo import get_backbone,\
 
 from modules import Model
 
-
-config = Config()
 set_seed(config.SEED)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -29,6 +29,17 @@ if device.type == 'cuda':
     else:
         DISTRIBUTED = False
 
+if not os.path.exists(config.SAVE_PATH):
+    os.mkdir(config.SAVE_PATH)
+
+with open(os.path.join(config.SAVE_PATH + '/config.json'), 'w') as f:
+    model_config = {x:dict(config.__dict__)[x] for x in dict(config.__dict__) if not x.startswith('_')}
+    json.dump(model_config, f)
+
+with open(os.path.join(config.SAVE_PATH + '/config.json'), 'r') as f:
+    model_config = json.load(f)
+
+print('TRAINNG CONFIG:', print(json.dumps(parsed, indent=4, sort_keys=True)))
 
  # === DATA LOADING ===
     
@@ -38,7 +49,7 @@ data_csv = pd.read_csv(config.CSV_PATH)
 # train_dataset = ImageDataset(data_csv,
 #                             config.IAMGES_PATH,
 #                             transform=train_transforms)
-train_dataset = DummyDataset(input_size=config.INPUT_DIM, num_samples=5000, channels_num=4)
+train_dataset = DummyDataset(input_size=config.INPUT_DIM, num_samples=5000, channels_num=3)
 train_loader = DataLoader(train_dataset,
                           batch_size=config.BATCH_SIZE,
                           shuffle=True,
@@ -75,6 +86,7 @@ trainer = Trainer(criterion=criterion,
                   start_epoch=config.START_EPOCH,
                   mixed_presicion=config.MIXED_PRESICION)
 
+print("[INFO] training the network...")
 trainer.run(model, train_loader,
             epochs=config.EPOCHES_NUM,
             save_path=config.SAVE_PATH,
