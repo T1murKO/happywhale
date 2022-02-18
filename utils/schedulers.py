@@ -1,5 +1,5 @@
 
-def ramp_scheduler(batch_size,
+def ramp_scheduler(batch_size=32,
                    lr_start=0.000001,
                    lr_max=0.000005,
                    lr_min=0.000001,

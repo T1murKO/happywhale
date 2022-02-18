@@ -1,18 +1,18 @@
 from torch import nn
-# from torchvision.models import efficientnet_b2, \
-#                                 efficientnet_b3, \
-#                                 efficientnet_b4, \
-#                                 efficientnet_b5, \
-#                                 efficientnet_b6, \
-#                                 efficientnet_b7
+from torchvision.models import efficientnet_b2, \
+                                efficientnet_b3, \
+                                efficientnet_b4, \
+                                efficientnet_b5, \
+                                efficientnet_b6, \
+                                efficientnet_b7
 
 from torchvision.models import resnext50_32x4d, resnext101_32x8d
-from senet import *
-from head import *
-from pool import *
+from modules.senet import *
+from modules.head import *
+from modules.pool import *
 from utils import ramp_scheduler
 
-def get_backbone(backbone_name='resnext50', backbone_params=None):
+def get_backbone(backbone_name='resnext50', backbone_params={}):
     
     if backbone_name == 'resnext50':
         backbone = nn.Sequential(*(list(resnext50_32x4d(**backbone_params).children())[:-2]))
@@ -60,7 +60,7 @@ def get_backbone(backbone_name='resnext50', backbone_params=None):
     
     
 
-def get_head(head_name='adacos', head_params=None):
+def get_head(head_name='adacos', head_params={}):
     
     if head_name == 'adacos':
         head = AdaCos(**head_params)
@@ -74,10 +74,10 @@ def get_head(head_name='adacos', head_params=None):
     return head
 
 
-def get_pooling(pool_name='gem', pool_params=None):
+def get_pooling(pool_name='gem', pool_params={}):
     
-    if pool_name == 'adacos':
-        pool = GeM(**pool)
+    if pool_name == 'gem':
+        pool = GeM(**pool_params)
 
     else:
         assert False, f'Error, unknown pooling name {pool_name}'
@@ -85,7 +85,7 @@ def get_pooling(pool_name='gem', pool_params=None):
     return pool
     
     
-def get_scheduler(scheduler_name='ramp', scheduler_params=None):
+def get_scheduler(scheduler_name='ramp', scheduler_params={}):
     
     if scheduler_name == 'ramp':
         schduler = ramp_scheduler(**scheduler_params)

@@ -1,7 +1,6 @@
 import torch
 from torch import nn
 import torch.nn.functional as F
-from loss import AdaCos, ArcFace
 
 
 class Model(nn.Module):
@@ -16,7 +15,8 @@ class Model(nn.Module):
         self.dropout = nn.Dropout(0.2)
         
     def forward(self, x, targets = None):
-        x = torch.squeeze(torch.squeeze(self.pool(self.backbone(x)), -1), -1)
+        x = self.backbone(x)
+        x = torch.squeeze(torch.squeeze(self.pool(x), -1), -1)
 
         x = F.relu(self.fc1(self.dropout(self.bn1(x))))
         x = F.normalize(x)

@@ -442,7 +442,8 @@ def se_resnext101_32x4d(num_classes=1000, inchannels=1,pretrained='imagenet'):
 if __name__ == '__main__':
     # cudnn.benchmark = True # This will make network slow ??
     import torch
-    mobilenet = se_resnext50_32x4d(num_classes=1000, inchannels=3, pretrained=None)
-    input = torch.rand((8, 3, 256, 512))
+    mobilenet = se_resnext50_32x4d(num_classes=1000, inchannels=3, pretrained=None).cuda()
+    input = torch.rand((8, 3, 512, 512)).cuda()
     out = mobilenet(input)
-    print(mobilenet)
+    print(out.shape)
+    # print(mobilenet)
