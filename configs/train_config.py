@@ -11,7 +11,7 @@ class config:
     SEED = 42
     
     CSV_PATH = '/root/happywhale/data/train.csv'
-    IAMGES_PATH = '/root/cropped_train_images'
+    IMAGES_PATH = '/root/cropped_train_images'
     SAVE_PATH = '/root/effnetb6'
     MASK_PASS = None
     CROP_PASS = None

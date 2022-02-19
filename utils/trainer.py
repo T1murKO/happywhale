@@ -19,9 +19,9 @@ class Trainer():
             self.train_batch = self.train_batch_loop_mixed
         
         
-    def accuracy(self, logits, labels):
+    def accuracy(self, logits, targets):
         ps = torch.argmax(logits,dim = 1).detach().cpu().numpy()
-        acc = accuracy_score(ps,labels.detach().cpu().numpy())
+        acc = accuracy_score(ps,targets.detach().cpu().numpy())
         return acc
         
     def train_batch_loop_mixed(self, model, train_loader, i, save_path=None, log_path=None):
@@ -31,13 +31,13 @@ class Trainer():
         batch_num = len(pbar_train)
         for it, data in enumerate(pbar_train):
             
-            images, labels = data
+            images, targets = data
             images = images.to(self.device)
-            labels = labels.to(self.device)
+            targets = targets.to(self.device)
             
             with torch.cuda.amp.autocast():
-                logits = model(images, labels)
-                loss = self.criterion(logits,labels)
+                logits = model(images, targets)
+                loss = self.criterion(logits,targets)
             
             self.optimizer.zero_grad()
             self.scaler.scale(loss).backward()
@@ -45,7 +45,7 @@ class Trainer():
             self.scaler.update()
             
             epoch_loss += loss.item()
-            epoch_acc += self.accuracy(logits, labels)
+            epoch_acc += self.accuracy(logits, targets)
             
             postfix = {'loss' : round(float(epoch_loss/(it+1)), 4), 'acc' : float(epoch_acc/(it+1))}
             pbar_train.set_postfix(postfix)
@@ -66,26 +66,26 @@ class Trainer():
         batch_num = len(pbar_train)
         for it, data in enumerate(pbar_train):
             
-            images, labels = data
+            images, targets = data
             images = images.to(self.device)
-            labels = labels.to(self.device)
+            targets = targets.to(self.device)
             
-            logits = model(images, labels)
-            loss = self.criterion(logits,labels)
+            logits = model(images, targets)
+            loss = self.criterion(logits,targets)
             
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
             
             epoch_loss += loss.item()
-            epoch_acc += self.accuracy(logits, labels)
+            epoch_acc += self.accuracy(logits, targets)
             
             postfix = {'loss' : round(float(epoch_loss/(it+1)), 4), 'acc' : float(epoch_acc/(it+1))}
             pbar_train.set_postfix(postfix)
             
             if save_path is not None:
                 if it % 100 == 99:
-                    with open(log_path + 'train_log.txt', 'a') as f:
+                    with open(join(log_path, 'train_log.txt'), 'a') as f:
                         f.write(f'B# {it+1}/{batch_num}, Loss: {round(float(epoch_loss/(it+1)), 4)}, Acc: {round(float(epoch_acc/(it+1)), 4)} \n')
                 
             
@@ -101,15 +101,15 @@ class Trainer():
         
         for it, data in enumerate(pbar_valid):
             
-            images,labels = data
+            images,targets = data
             images = images.to(self.device)
-            labels = labels.to(self.device)
+            targets = targets.to(self.device)
             
-            logits = model(images, labels)
-            loss = self.criterion(logits, labels)
+            logits = model(images, targets)
+            loss = self.criterion(logits, targets)
             
             epoch_loss += loss.item()
-            epoch_acc += self.accuracy(logits, labels)
+            epoch_acc += self.accuracy(logits, targets)
             
             postfix = {'loss' : round(float(epoch_loss/(it+1)), 4), 'acc' : float(epoch_acc/(it+1))}
             pbar_valid.set_postfix(postfix)
@@ -117,7 +117,7 @@ class Trainer():
             
             if save_path is not None:
                 if it % 200 == 199:
-                    with open(save_path + 'valid_log.txt', 'a') as f:
+                    with open(join(save_path, 'valid_log.txt'), 'a') as f:
                         f.write(f'B# {it+1}/{batch_num}, Loss: {round(float(epoch_loss/(it+1)), 4)}, Acc: {round(float(epoch_acc/(it+1)), 4)} \n')
             
         return epoch_loss / len(valid_loader), epoch_acc / len(valid_loader)
@@ -147,7 +147,7 @@ class Trainer():
             avg_train_loss, avg_train_acc = self.train_batch(model, train_loader, i, save_path=epoch_save_path, log_path=save_path)
             
             if save_path is not None:
-                torch.save(model, epoch_save_path + 'model.pth')
+                torch.save(model, join(epoch_save_path, 'model.pth'))
             
             if valid_loader is not None:
                 model.eval()

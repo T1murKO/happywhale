@@ -6,7 +6,7 @@ import pandas as pd
 import os
 import json
 from utils import get_augmentation_list, \
-                    ImageDataset, DummyDataset, \
+                    TrainImageDataset, DummyDataset, \
                     set_seed
 from torch.utils.data import DataLoader
 
@@ -47,8 +47,8 @@ print('[INFO] Training config', json.dumps(model_config, indent=3, sort_keys=Tru
 data_csv = pd.read_csv(config.CSV_PATH)
 
 transforms = get_augmentation_list(input_size=config.INPUT_SIZE)
-train_dataset = ImageDataset(data_csv,
-                            config.IAMGES_PATH,
+train_dataset = TrainImageDataset(data_csv,
+                            config.IMAGES_PATH,
                             transform=transforms)
 # train_dataset = DummyDataset(input_size=config.INPUT_DIM, num_samples=5000, channels_num=3)
 train_loader = DataLoader(train_dataset,
