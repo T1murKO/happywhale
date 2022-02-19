@@ -1,5 +1,3 @@
-pytorch
-torchvision
 imgaug
 scikit-learn
 jupyter
@@ -8,3 +6,4 @@ numpy
 pandas
 Pillow
 tqdm
+opencv-python
