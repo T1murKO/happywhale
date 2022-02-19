@@ -66,6 +66,23 @@ class DummyDataset(Dataset):
     image = torch.randn((self.channels_num, self.input_size[0], self.input_size[1]))
     
     return image, 5
+  
+class DummyDataset2(Dataset):
+
+  def __init__(self, input_size=(256, 256), num_samples=5000, channels_num=3):
+    self.input_size = input_size
+    self.num_samples = num_samples
+    self.channels_num = channels_num
+
+  def __len__(self):
+    return self.num_samples
+ 
+
+  def __getitem__(self, index):
+
+    image = torch.randn((self.channels_num, self.input_size[0], self.input_size[1]))
+    
+    return image, '123.jpg'
 
 
 class MaskImageDataset(Dataset):

@@ -3,7 +3,7 @@ import cv2
 import torch
 import json
 from tqdm import tqdm
-from utils.dataset import TestImageDataset
+from utils.dataset import TestImageDataset, DummyDataset, DummyDataset2
 from torch.utils.data import DataLoader
 from utils.transforms import get_infer_list
 from utils import TrainImageDataset
@@ -16,8 +16,8 @@ from os.path import join
 import numpy as np
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    
-if device == 'cuda':
+print(device.type)
+if device.type == 'cuda':
     NUM_GPU = torch.cuda.device_count()
     print(f'[INFO] number of GPUs found: {NUM_GPU}')
     if NUM_GPU > 1:
@@ -52,11 +52,12 @@ if not config.NEIGHBORS_PATH:
 
     transforms = get_infer_list(input_size=config.INPUT_SIZE)
 
-    train_dataset = TrainImageDataset(data_csv,
-                                config.TRAIN_IMAGES_PATH,
-                                transform=transforms)
+    # train_dataset = TrainImageDataset(data_csv,
+    #                             config.TRAIN_IMAGES_PATH,
+    #                             transform=transforms)
+    train_dataset = DummyDataset(config.INPUT_SIZE, num_samples=5000)
 
-    test_dataset = TestImageDataset(config.TEST_IMAGES_PATH, transform=transforms)
+    test_dataset = DummyDataset(config.INPUT_SIZE, num_samples=2000)
 
     train_loader = DataLoader(train_dataset,
                             batch_size=config.BATCH_SIZE,
@@ -70,8 +71,7 @@ if not config.NEIGHBORS_PATH:
                             num_workers=os.cpu_count(),
                             pin_memory=False)
 
-    img_to_target = json.loads(open('/content/happywhale/data/img_to_target.json', 'r').read())
-    target_to_id = json.loads(open('/home/timur/happywhale/data/json/target_to_id.json', 'r').read())
+    target_to_id = json.loads(open('./data/json/target_to_id.json', 'r').read())
     target_to_id = {int(key): target_to_id[key] for key in target_to_id}
 
 
@@ -82,7 +82,8 @@ if not config.NEIGHBORS_PATH:
 
     for images, targets in tqdm(train_loader):
         images = images.to(device)
-        
+        print(images.shape)
+        print(targets.shape)
         embeddings = model(images).detach().cpu().numpy()
         
         train_embeddings.append(embeddings)
