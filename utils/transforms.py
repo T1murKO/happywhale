@@ -27,7 +27,7 @@ def get_augmentation_list(input_size=(256, 256)):
     return transform_list
 
 
-def get_eval_list(input_size=(256, 256)):
+def get_infer_list(input_size=(256, 256)):
     transforms_list_eval = T.Compose([             
     iaa.Sequential([
         # iaa.size.Resize(input_size, interpolation='cubic')

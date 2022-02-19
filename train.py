@@ -31,10 +31,10 @@ if device == 'cuda':
     
 data_csv = pd.read_csv(config.CSV_PATH)
 
-train_transforms = get_augmentation_list(input_size=config.INPUT_DIM)
+transforms = get_augmentation_list(input_size=config.INPUT_SIZE)
 train_dataset = ImageDataset(data_csv,
-                            config.IAMGES_PATH,
-                            transform=train_transforms)
+                            config.IMAGES_PATH,
+                            transform=transforms)
 
 train_loader = DataLoader(train_dataset,
                           batch_size=config.BATCH_SIZE,
@@ -61,6 +61,8 @@ optimizer = optim.Adam(model.parameters(), lr=schedule[0])
 
 if config.IS_RESUME:
     model = torch.load(config.LOAD_PATH).to(device)
+
+
 
 
 # === START TRAINING

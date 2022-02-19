@@ -1,19 +1,29 @@
-# from sklearn.neighbors import NearestNeighbors
-# import cv2
-# import torch
-# import json
-# from tqdm import tqdm
-# from transforms import get_eval_list
+from sklearn.neighbors import NearestNeighbors
+import cv2
+import torch
+import json
+from tqdm import tqdm
+from utils.transforms import get_infer_list
+from modules.zoo import *
+from modules import Model
+from configs.infer_config import config
+import pandas as pd
 
-# input_size = (256, 256)
 
-# def get_embedding(img_path):
-#     img = cv2.cvtColor(cv2.imread(img_path), cv2.COLOR_BGR2RGB)
-#     input = torch.unsqueeze(get_transform_list(img), 0).to(device)
-#     embed = model(input).detach().cpu().numpy()
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    
+if device == 'cuda':
+    NUM_GPU = torch.cuda.device_count()
+    
+    if NUM_GPU > 1:
+        DISTRIBUTED = True
+        config.BATCH_SIZE = config.BATCH_SIZE * NUM_GPU
+    else:
+        DISTRIBUTED = False
 
-#     return embed
 
+data_csv = pd.read_csv(config.CSV_PATH)
+model = torch.load(config.MODEL_PATH).to(device)
 
 
 # train_folder = '/content/train_images-256-256/'

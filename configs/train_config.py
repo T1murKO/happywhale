@@ -7,17 +7,17 @@
 # EffNetB6	528
 # EffNetB7	600
 
-class Config:
+class config:
     SEED = 42
     
     CSV_PATH = '/content/happywhale/data/train.csv'
-    IAMGES_PATH = '/content/train_images-256-256'
+    IMAGES_PATH = '/content/train_images-256-256'
     SAVE_PATH = '/content/drive/MyDrive/senet154/'
     MASK_PASS = None
     CROP_PASS = None
     
     EMBED_DIM = 512
-    INPUT_DIM = (512, 512)
+    INPUT_SIZE = (512, 512)
     CLASS_NUM = 15587
     EPOCHES_NUM = 20
     BATCH_SIZE = 16
