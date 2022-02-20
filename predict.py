@@ -10,10 +10,17 @@ from utils import TrainImageDataset
 from modules.zoo import *
 from modules import Model
 from configs.infer_config import config
+from configs.train_config import config as model_config
 import pandas as pd
 import os
 from os.path import join
 import numpy as np
+from modules.zoo import get_backbone,\
+                        get_pooling, \
+                        get_head, \
+                        get_scheduler
+
+from modules import Model
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(device.type)
@@ -43,8 +50,12 @@ if not config.NEIGHBORS_PATH:
 
     data_csv = pd.read_csv(config.CSV_PATH)
 
-    model = torch.load(config.MODEL_PATH).to(device)
-
+    backbone, backbone_dim = get_backbone(model_config.BACKBONE_NAME, model_config.BACKBONE_PARAMS)
+    pooling = get_pooling(model_config.POOLING_NAME, model_config.POOLING_PARAMS)
+    head = get_head(model_config.HEAD_NAME, model_config.HEAD_PARAMS)
+    model = Model(model_config.CLASS_NUM, backbone, pooling, head, embed_dim=model_config.EMBED_DIM, backbone_dim=backbone_dim)
+    model.load_state_dict(torch.load(config.MODEL_PATH).module.state_dict())
+    model.to(device)
     if DISTRIBUTED:
         model = torch.nn.DataParallel(model)
         
@@ -52,12 +63,16 @@ if not config.NEIGHBORS_PATH:
 
     transforms = get_infer_list(input_size=config.INPUT_SIZE)
 
-    # train_dataset = TrainImageDataset(data_csv,
-    #                             config.TRAIN_IMAGES_PATH,
-    #                             transform=transforms)
-    train_dataset = DummyDataset(config.INPUT_SIZE, num_samples=5000)
+    train_dataset = TrainImageDataset(data_csv,
+                                config.TRAIN_IMAGES_PATH,
+                                transform=transforms)
+    
+    test_dataset = TestImageDataset(config.TEST_IMAGES_PATH,
+                                transform=transforms)
 
-    test_dataset = DummyDataset(config.INPUT_SIZE, num_samples=2000)
+    # train_dataset = DummyDataset(config.INPUT_SIZE, num_samples=100)
+
+    # test_dataset = DummyDataset2(config.INPUT_SIZE, num_samples=50)
 
     train_loader = DataLoader(train_dataset,
                             batch_size=config.BATCH_SIZE,
@@ -82,8 +97,6 @@ if not config.NEIGHBORS_PATH:
 
     for images, targets in tqdm(train_loader):
         images = images.to(device)
-        print(images.shape)
-        print(targets.shape)
         embeddings = model(images).detach().cpu().numpy()
         
         train_embeddings.append(embeddings)
@@ -108,7 +121,7 @@ if not config.NEIGHBORS_PATH:
         images = images.to(device)
         embeddings = model(images).detach().cpu().numpy()
         distances, idxs = neigh.kneighbors(embeddings, config.KNN_NUM, return_distance=True)
-        test_ids.append(images)
+        test_ids.append(img_names)
         test_nn_idxs.append(idxs)
         test_nn_distances.append(distances)
 
@@ -116,7 +129,6 @@ if not config.NEIGHBORS_PATH:
     test_nn_distances = np.concatenate(test_nn_distances)
     test_nn_idxs = np.squeeze(np.concatenate(test_nn_idxs))
     test_ids = np.squeeze(np.concatenate(test_ids))
-
 
     print('[INFO] Building nearest neighbors dataframe')
     
