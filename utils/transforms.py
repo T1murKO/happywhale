@@ -2,6 +2,10 @@ import imgaug.augmenters as iaa
 from torchvision import transforms as T
 
 
+def crop_box(img, box, exntend_share=(0.15, 1)):
+    pass
+
+
 def get_augmentation_list(input_size=(256, 256)):
     transform_list = T.Compose([             
         iaa.Sequential([

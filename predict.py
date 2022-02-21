@@ -156,10 +156,13 @@ else:
 print('[INFO] Processing nearest neighbors dataframe')
 
 sample_list = ['938b7e931166', '5bf17305f073', '7593d2aee842', '7362d7a01d00','956562ff2888']
+exclude = ['37c7aba965a5', '114207cab555']
 
 n_new = 0
 predictions = {}
 for i,row in tqdm(test_df.iterrows()):
+    if row.target in exclude:
+        continue
     if row.image in predictions:
         if len(predictions[row.image])==5:
             continue
