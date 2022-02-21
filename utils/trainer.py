@@ -58,7 +58,7 @@ class Trainer():
             
         return epoch_loss / len(train_loader), epoch_acc / len(train_loader)
 
-
+    
     def train_batch_loop(self, model, train_loader, i, save_path=None, log_path=None):
         epoch_loss = 0.0
         epoch_acc = 0.0
