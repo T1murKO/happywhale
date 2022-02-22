@@ -30,6 +30,8 @@ if device.type == 'cuda':
     if NUM_GPU > 1:
         DISTRIBUTED = True
         config.BATCH_SIZE = config.BATCH_SIZE * NUM_GPU
+        import torch.multiprocessing
+        torch.multiprocessing.set_sharing_strategy('file_system')
     else:
         DISTRIBUTED = False
 
@@ -55,11 +57,13 @@ if not config.NEIGHBORS_PATH:
     head = get_head(model_config.HEAD_NAME, model_config.HEAD_PARAMS)
     model = Model(model_config.CLASS_NUM, backbone, pooling, head, embed_dim=model_config.EMBED_DIM, backbone_dim=backbone_dim)
     model.load_state_dict(torch.load(config.MODEL_PATH).module.state_dict())
+    # model = torch.load(config.MODEL_PATH).to(device)
     model.to(device)
     if DISTRIBUTED:
         model = torch.nn.DataParallel(model)
-        
+
     model.eval()
+    
 
     transforms = get_infer_list(input_size=config.INPUT_SIZE)
 
@@ -161,13 +165,13 @@ exclude = ['37c7aba965a5', '114207cab555']
 n_new = 0
 predictions = {}
 for i,row in tqdm(test_df.iterrows()):
-    if row.target in exclude:
-        continue
     if row.image in predictions:
+        if row.target in exclude:
+            continue
         if len(predictions[row.image])==5:
             continue
         predictions[row.image].append(row.target)
-    elif row.confidence > config.THRESHOLD:
+    elif row.confidence > config.THRESHOLD and row.target not in exclude:
         predictions[row.image] = [row.target,'new_individual']
     else:
         n_new += 1

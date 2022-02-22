@@ -1,11 +1,11 @@
 
 def ramp_scheduler(batch_size,
-                   lr_start=0.000001,
+                   lr_start=0.0000005,
                    lr_max=0.000005,
                    lr_min=0.000001,
-                   lr_ramp_ep=4,
+                   lr_ramp_ep=5,
                    lr_sus_ep=0,
-                   lr_decay=0.925):
+                   lr_decay=0.9):
 
     lr_start   = lr_start
     lr_max     = lr_max * batch_size

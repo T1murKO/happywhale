@@ -11,17 +11,17 @@ def get_augmentation_list(input_size=(256, 256)):
         iaa.Sequential([
             iaa.Sequential([
             iaa.Fliplr(0.5),
-            iaa.Sometimes(0.2, iaa.AverageBlur(k=(3,3))),
-            iaa.Sometimes(0.2, iaa.MotionBlur(k=(3,4))),
-            iaa.Sometimes(0.2,iaa.Add((-10, 10), per_channel=0.5)),
-            iaa.Sometimes(iaa.Multiply((0.9, 1.1), per_channel=0.5)),
-            iaa.Sometimes(0.2, iaa.Affine(
-                scale={'x': (0.9,1.1), 'y': (0.9,1.1)},
-                translate_percent={'x': (-0.05,0.05), 'y': (-0.05,0.05)},
-                shear=(-10,10),
-                rotate=(-10,10)
+            iaa.Sometimes(0.3, iaa.AverageBlur(k=(3,5))),
+            iaa.Sometimes(0.3, iaa.MotionBlur(k=(3,5))),
+            iaa.Sometimes(0.3,iaa.Add((-15, 15), per_channel=0.6)),
+            iaa.Sometimes(0.3, iaa.Multiply((0.8, 1.2), per_channel=0.6)),
+            iaa.Sometimes(0.3, iaa.Affine(
+                scale={'x': (0.85,1.2), 'y': (0.85,1.2)},
+                translate_percent={'x': (-0.065,0.065), 'y': (-0.065,0.065)},
+                shear=(-12,12),
+                rotate=(-12,12)
                 )),
-            iaa.Sometimes(0.1, iaa.Grayscale(alpha=(0.8,1.0))),
+            iaa.Sometimes(0.2, iaa.Grayscale(alpha=(0.7,1.0))),
             ], random_order=True),
             # iaa.size.Resize(input_size, interpolation='cubic')
         ]).augment_image,     

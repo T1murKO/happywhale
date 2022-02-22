@@ -26,6 +26,10 @@ def get_backbone(backbone_name='resnext50', backbone_params={}):
         backbone = se_resnext50_32x4d(**backbone_params)
         backbone_dim = 2048
     
+    elif backbone_name == 'senet154':
+        backbone = senet154(**backbone_params)
+        backbone_dim = 2048
+    
     elif backbone_name == 'effnetv1_b2':
         backbone = nn.Sequential(*(list(efficientnet_b2(**backbone_params).children())[:-2]))
         backbone_dim = 1408

@@ -52,7 +52,7 @@ class Trainer():
             
             if save_path is not None:
                 if it % 100 == 99:
-                    with open(log_path + 'train_log.txt', 'a') as f:
+                    with open(join(log_path, 'train_log.txt'), 'a') as f:
                         f.write(f'B# {it+1}/{batch_num}, Loss: {round(float(epoch_loss/(it+1)), 4)}, Acc: {round(float(epoch_acc/(it+1)), 4)} \n')
                 
             

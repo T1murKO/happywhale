@@ -1,5 +1,5 @@
 from utils.trainer import Trainer
-from configs import config
+from configs.train_config import config
 import torch
 from torch import nn, optim
 import pandas as pd
@@ -50,11 +50,12 @@ transforms = get_augmentation_list(input_size=config.INPUT_SIZE)
 train_dataset = TrainImageDataset(data_csv,
                             config.IMAGES_PATH,
                             transform=transforms)
-# train_dataset = DummyDataset(input_size=config.INPUT_DIM, num_samples=5000, channels_num=3)
+# train_dataset = DummyDataset(input_size=config.INPUT_SIZE, num_samples=500, channels_num=3)
 train_loader = DataLoader(train_dataset,
                           batch_size=config.BATCH_SIZE,
                           shuffle=True,
                           num_workers=os.cpu_count(),
+                          drop_last=True,
                           pin_memory=True if device == 'cuda' else False)
 
 
@@ -62,8 +63,8 @@ train_loader = DataLoader(train_dataset,
 
 
 backbone, backbone_dim = get_backbone(config.BACKBONE_NAME, config.BACKBONE_PARAMS)
-pooling = get_pooling(config.POOLING_NAME, config.POOLING_PARAMS)
-head = get_head(config.HEAD_NAME, config.HEAD_PARAMS)
+pooling = get_pooling(config.POOLING_NAME, config.POOLING_PARAMS).to(device)
+head = get_head(config.HEAD_NAME, config.HEAD_PARAMS).to(device)
 
 model = Model(config.CLASS_NUM, backbone, pooling, head, embed_dim=config.EMBED_DIM, backbone_dim=backbone_dim).to(device)
 
@@ -73,7 +74,7 @@ model = Model(config.CLASS_NUM, backbone, pooling, head, embed_dim=config.EMBED_
 criterion = nn.CrossEntropyLoss()
 schedule = get_scheduler(config.SCHEDULER_NAME, config.BATCH_SIZE, config.SCHEDULER_PARAMS)
 
-optimizer = optim.Adam(model.parameters(), lr=schedule(0))
+optimizer = optim.Adam(model.parameters(), lr=schedule(0), weight_decay=1e-5)
 
 if config.IS_RESUME:
     model = torch.load(config.LOAD_PATH).to(device)

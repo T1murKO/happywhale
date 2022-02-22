@@ -22,9 +22,20 @@ class AdaCos(nn.Module):
         one_hot = torch.zeros_like(logits)
         one_hot.scatter_(1, labels.view(-1, 1).long(), 1)
 
-        if self.fixed_scale:
+        if not self.fixed_scale:
             with torch.no_grad():
-                B_avg = torch.where(one_hot < 1, torch.exp(self.scale * logits), torch.zeros_like(logits))
+                # print('one hot', type(one_hot), one_hot.dtype)
+                # print('self.scale', type(self.scale))
+                # print('logits', type(logits), logits.dtype)
+                # a = one_hot < 1
+                # b = self.scale * logits
+                # c = torch.exp(b)
+                # d = torch.zeros_like(logits, dtype=torch.float32)
+                # print('a', type(a), a.dtype)
+                # print('c', type(c), c.dtype)
+                # print('d', type(d), d.dtype)
+                # e = torch.where(a, c, d)
+                B_avg = torch.where(one_hot < 1, torch.exp(self.scale * logits), torch.zeros_like(logits, dtype=torch.float32))
                 B_avg = torch.sum(B_avg) / feats.size(0)
                 
                 theta_med = torch.median(theta[one_hot == 1])

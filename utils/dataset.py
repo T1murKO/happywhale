@@ -3,18 +3,15 @@ import cv2
 import torch
 from os.path import join
 import os
-from transforms import crop_box
 
 class TrainImageDataset(Dataset):
 
-  def __init__(self, csv, img_folder, transform=None, box_csv=None):
+  def __init__(self, csv, img_folder, transform=None,):
     self.transform = transform
     self.img_folder = img_folder
      
     self.images = csv['image']
     self.targets = csv['Y']
-    self.box_csv = box_csv
-    self.box_csv = self.box_csv['box'].apply(lambda x: [float(i) for i in x.split()])
    
 
   def __len__(self):
@@ -28,9 +25,6 @@ class TrainImageDataset(Dataset):
     
 
     if self.transform is not None:
-        if self.box_csv is not None:
-          image = crop_box(image, self.box_csv[index])
-          
         image = self.transform(image)
     
     return image, target
