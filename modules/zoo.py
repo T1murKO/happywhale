@@ -7,10 +7,10 @@ from torchvision.models import efficientnet_b2, \
                                 efficientnet_b7
 
 from torchvision.models import resnext50_32x4d, resnext101_32x8d
-from modules.senet import *
-from modules.head import *
-from modules.pool import *
-from utils import ramp_scheduler
+from backbones import *
+from head import *
+from pool import *
+from schedulers import ramp_scheduler
 
 def get_backbone(backbone_name='resnext50', backbone_params={}):
     
@@ -95,6 +95,6 @@ def get_scheduler(scheduler_name='ramp', batch_size=32, scheduler_params={}):
         schduler = ramp_scheduler(batch_size, **scheduler_params)
 
     else:
-        assert False, f'Error, unknown pooling name {pool_name}'
+        assert False, f'Error, unknown pooling name {scheduler_name}'
             
     return schduler
