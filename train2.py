@@ -7,14 +7,16 @@ import os
 import json
 from utils import  set_seed, Augmenter
 from ffcv.fields.decoders import IntDecoder, SimpleRGBImageDecoder
-from ffcv.transforms import ToTensor, ToDevice, ToTorchImage
+from ffcv.transforms import ToTensor, ToDevice, ToTorchImage, Convert
 from ffcv.loader import Loader, OrderOption
-from modules.zoo import get_backbone,\
+from modules.factory import get_backbone,\
                         get_pooling, \
                         get_head, \
                         get_scheduler
 
 from modules import Model
+from modules.arc_triplet_loss import ArcTripletLoss
+from torch.nn.parallel import DistributedDataParallel
 
 set_seed(config.SEED)
 
@@ -25,6 +27,8 @@ if device.type == 'cuda':
     if NUM_GPU > 1:
         DISTRIBUTED = True
         config.BATCH_SIZE = config.BATCH_SIZE * NUM_GPU
+        rank = NUM_GPU - 1
+        this_device = f'cuda:{rank}'
     else:
         DISTRIBUTED = False
 
@@ -43,14 +47,14 @@ print('[INFO] Training config', json.dumps(model_config, indent=3, sort_keys=Tru
 
  # === DATA LOADING ===
     
-    
+
 pipelines = {
-    'image': [SimpleRGBImageDecoder(), ToTensor(), ToTorchImage(), Augmenter(), ToDevice()],
-    'label': [IntDecoder(), ToDevice()]
+    'image': [SimpleRGBImageDecoder(), ToTensor(), Convert(torch.float32), ToDevice(torch.device(this_device)), ToTorchImage(), Augmenter()],
+    'label': [IntDecoder(), ToDevice(torch.device(this_device))]
 }
 
-train_loader = Loader(config.DATA_PATH, batch_size=config.BACKBONE_PARAMS, num_workers=os.cpu_count(),
-                order=OrderOption.SEQUENTIAL, pipelines=pipelines)
+train_loader = Loader(config.DATA_PATH, batch_size=config.BACKBONE_PARAMS, num_workers=os.cpu_count()-1,
+                order=OrderOption.SEQUENTIAL, pipelines=pipelines, os_cache=True, distributed=True)
 
 
 # ===  MODEL SETUP ===
@@ -60,23 +64,23 @@ backbone, backbone_dim = get_backbone(config.BACKBONE_NAME, config.BACKBONE_PARA
 pooling = get_pooling(config.POOLING_NAME, config.POOLING_PARAMS).to(device)
 head = get_head(config.HEAD_NAME, config.HEAD_PARAMS).to(device)
 
-model = Model(config.CLASS_NUM, backbone, pooling, head, embed_dim=config.EMBED_DIM, backbone_dim=backbone_dim).to(device)
+model = Model(backbone, pooling, head, embed_dim=config.EMBED_DIM, backbone_dim=backbone_dim).to(device)
 
 
 # === TRAINING SETUP ===
 
-criterion = nn.CrossEntropyLoss()
+criterion = ArcTripletLoss(margin=config.TRIPLET_MARGIN)
 schedule = get_scheduler(config.SCHEDULER_NAME, config.BATCH_SIZE, config.SCHEDULER_PARAMS)
 
-optimizer = optim.Adam(model.parameters(), lr=schedule(0), weight_decay=1e-5)
+optimizer = optim.AdamW(model.parameters(), lr=schedule(0), weight_decay=1e-5)
 
 if config.IS_RESUME:
     model = torch.load(config.LOAD_PATH).to(device)
     print('[INFO] Model loaded from checkpoint', json.dumps(model_config, indent=3, sort_keys=True))
 
 if DISTRIBUTED:
-    model = torch.nn.DataParallel(model)
-
+    model = nn.SyncBatchNorm.convert_sync_batchnorm(model)
+    model = DistributedDataParallel(model).to(rank)
 
 
 # === START TRAINING

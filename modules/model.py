@@ -1,9 +1,6 @@
-from glob import glob
-import xdrlib
 import torch
 from torch import nn
 import torch.nn.functional as F
-from arc_triplet_loss import *
 
     
 def l2_norm(input,axis=1):
@@ -12,12 +9,11 @@ def l2_norm(input,axis=1):
     return output
 
 class Model(nn.Module):
-    def __init__(self, backbone, pooling, head, embed_dim=512, backbone_dim=2048, arc_criterion=nn.CrossEntropyLoss()):
+    def __init__(self, backbone, pooling, head, embed_dim=512, backbone_dim=2048):
         super(Model, self).__init__()
         self.backbone = backbone
         self.pool = pooling
         self.head = head
-        self.arc_criterion = arc_criterion
         
         self.arc_fc = nn.Linear(backbone_dim, embed_dim)
         # nn.init.normal_(self.arc_fc.weight, std=0.001)
@@ -61,29 +57,26 @@ class Model(nn.Module):
             return global_feat, local_feat, logits
         
         return global_feat, local_feat, arc_feats
-    
-    def get_loss(self, global_feat, local_feat, logits, targets):
-        triplet_loss = global_loss(TripletLoss(margin=0.3), global_feat, targets)[0] + \
-                      local_loss(TripletLoss(margin=0.3), local_feat, targets)[0]
-                      
-        arc_loss = self.arc_criterion(logits, targets)
-        
-        return triplet_loss + arc_loss
 
+    
 if __name__ == '__main__':
-    from zoo import get_backbone,\
+    from factory import get_backbone,\
                         get_pooling, \
                         get_head
-
-    backbone, backbone_dim = get_backbone('effnetv1_b2')
+    from arc_triplet_loss import ArcTripletLoss
+    crterion = ArcTripletLoss(margin=0.25)
+    backbone, backbone_dim = get_backbone('effnetv2_m')
     pool = get_pooling('gem')
     head = get_head('adacos', head_params={'feat_dim':512, 'num_classes':15567})
     
     model = Model(backbone, pool, head, embed_dim=512, backbone_dim=backbone_dim)
-    x = torch.randn([4, 3, 260, 260])
-    targets = torch.tensor([0, 0, 2, 3])
-    gf, lf, logits = model(x, targets)    
-    loss = model.get_loss(gf, lf, logits, targets)
-    print(loss)
+    
+    x = torch.randn([4, 3, 512, 512])
+    targets = torch.tensor([0, 1, 2, 3])
+    
+    gl, lf, logits= model(x, targets)
+    print(gl.shape)
+    print(lf.shape)
+    
     
     

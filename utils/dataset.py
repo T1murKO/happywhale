@@ -9,10 +9,15 @@ import numpy as np
 
 class TrainImageDataset(Dataset):
 
-  def __init__(self, csv, img_folder, transform=None,):
+  def __init__(self, csv, img_folder, transform=None, min_class_num=0, img_size=(256, 256)):
     self.transform = transform
     self.img_folder = img_folder
-     
+    self.img_size = img_size
+    
+    class_counts = csv['Y'].value_counts()
+    allowed_class_names = class_counts[class_counts > min_class_num].index
+    csv = csv[csv['Y'].isin(allowed_class_names)].reset_index(drop=True)
+    
     self.images = csv['image']
     self.targets = csv['Y']
    
@@ -23,6 +28,7 @@ class TrainImageDataset(Dataset):
 
   def __getitem__(self, index):
     image = cv2.cvtColor(cv2.imread(join(self.img_folder, self.images[index])), cv2.COLOR_BGR2RGB)
+    image = cv2.resize(image, self.img_size)
     target = self.targets[index]
     
 

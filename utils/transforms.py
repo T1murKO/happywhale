@@ -31,7 +31,7 @@ class Augmenter(nn.Module):
             
             
         )
-    
+    @torch.no_grad()
     def forward(self, x):
         return self.aug_list(x.type(torch.float32) / 255.)
 

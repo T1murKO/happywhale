@@ -4,13 +4,16 @@ from torchvision.models import efficientnet_b2, \
                                 efficientnet_b4, \
                                 efficientnet_b5, \
                                 efficientnet_b6, \
-                                efficientnet_b7
+                                efficientnet_b7, \
+                                efficientnet_v2_s, \
+                                efficientnet_v2_m, \
+                                efficientnet_v2_l
 
 from torchvision.models import resnext50_32x4d, resnext101_32x8d
-from backbones import *
-from head import *
-from pool import *
-from schedulers import ramp_scheduler
+from .backbones import *
+from .head import *
+from .pool import *
+from .schedulers import ramp_scheduler
 
 def get_backbone(backbone_name='resnext50', backbone_params={}):
     
@@ -57,6 +60,19 @@ def get_backbone(backbone_name='resnext50', backbone_params={}):
     elif backbone_name == 'effnetv1_b7':
         backbone = nn.Sequential(*(list(efficientnet_b7(**backbone_params).children())[:-2]))
         backbone_dim = 2560
+        
+    elif backbone_name == 'effnetv2_s':
+        backbone = nn.Sequenital(*(list(efficientnet_v2_s(**backbone_params).children())[:-2]))
+        backbone_dim = 1280
+        
+    elif backbone_name == 'effnetv2_m':
+        backbone = nn.Sequential(*(list(efficientnet_v2_m(**backbone_params).children())[:-2]))
+        backbone_dim = 1280
+        
+    elif backbone_name == 'effnetv2_l':
+        backbone = nn.Sequential(*(list(efficientnet_v2_l(**backbone_params).children())[:-2]))
+        backbone_dim = 1280
+        
     else:
         assert False, f'Error, unknown backbone name {backbone_name}'
         
@@ -98,3 +114,5 @@ def get_scheduler(scheduler_name='ramp', batch_size=32, scheduler_params={}):
         assert False, f'Error, unknown pooling name {scheduler_name}'
             
     return schduler
+
+

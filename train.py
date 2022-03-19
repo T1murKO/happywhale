@@ -10,7 +10,7 @@ from utils import get_augmentation_list, \
                     set_seed
 from torch.utils.data import DataLoader
 
-from modules.zoo import get_backbone,\
+from modules.factory import get_backbone,\
                         get_pooling, \
                         get_head, \
                         get_scheduler
@@ -66,7 +66,7 @@ backbone, backbone_dim = get_backbone(config.BACKBONE_NAME, config.BACKBONE_PARA
 pooling = get_pooling(config.POOLING_NAME, config.POOLING_PARAMS).to(device)
 head = get_head(config.HEAD_NAME, config.HEAD_PARAMS).to(device)
 
-model = Model(config.CLASS_NUM, backbone, pooling, head, embed_dim=config.EMBED_DIM, backbone_dim=backbone_dim).to(device)
+model = Model(backbone, pooling, head, embed_dim=config.EMBED_DIM, backbone_dim=backbone_dim).to(device)
 
 
 # === TRAINING SETUP ===

@@ -147,7 +147,7 @@ class Trainer():
             avg_train_loss, avg_train_acc = self.train_batch(model, train_loader, i, save_path=epoch_save_path, log_path=save_path)
             
             if save_path is not None:
-                torch.save(model, join(epoch_save_path, 'model.pth'))
+                torch.save(model.module.state_dict(), join(epoch_save_path, 'model.pth'))
             
             if valid_loader is not None:
                 model.eval()
