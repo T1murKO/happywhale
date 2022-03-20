@@ -3,11 +3,14 @@ import cv2
 import torch
 import json
 from tqdm import tqdm
-from utils.dataset import TestImageDataset, DummyDataset, DummyDataset2
-from torch.utils.data import DataLoader
-from utils.transforms import get_infer_list
-from utils import TrainImageDataset
-from modules.zoo import *
+# from utils.dataset import TestImageDataset, DummyDataset, DummyDataset2
+# from torch.utils.data import DataLoader
+# from utils.transforms import get_infer_list
+# from utils import TrainImageDataset
+from ffcv.fields.decoders import IntDecoder, SimpleRGBImageDecoder
+from ffcv.transforms import ToTensor, ToDevice, ToTorchImage, Convert
+from ffcv.loader import Loader, OrderOption
+from modules.factory import *
 from modules import Model
 from configs.infer_config import config
 from configs.train_config import config as model_config
@@ -15,7 +18,7 @@ import pandas as pd
 import os
 from os.path import join
 import numpy as np
-from modules.zoo import get_backbone,\
+from modules.factory import get_backbone,\
                         get_pooling, \
                         get_head, \
                         get_scheduler
@@ -23,7 +26,6 @@ from modules.zoo import get_backbone,\
 from modules import Model
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-print(device.type)
 if device.type == 'cuda':
     NUM_GPU = torch.cuda.device_count()
     print(f'[INFO] number of GPUs found: {NUM_GPU}')
@@ -55,8 +57,8 @@ if not config.NEIGHBORS_PATH:
     backbone, backbone_dim = get_backbone(model_config.BACKBONE_NAME, model_config.BACKBONE_PARAMS)
     pooling = get_pooling(model_config.POOLING_NAME, model_config.POOLING_PARAMS)
     head = get_head(model_config.HEAD_NAME, model_config.HEAD_PARAMS)
-    model = Model(model_config.CLASS_NUM, backbone, pooling, head, embed_dim=model_config.EMBED_DIM, backbone_dim=backbone_dim)
-    model.load_state_dict(torch.load(config.MODEL_PATH).module.state_dict())
+    model = Model(backbone, pooling, head, embed_dim=model_config.EMBED_DIM, backbone_dim=backbone_dim)
+    model.load_state_dict(torch.load(config.MODEL_PATH).state_dict())
     # model = torch.load(config.MODEL_PATH).to(device)
     model.to(device)
     if DISTRIBUTED:
@@ -65,30 +67,42 @@ if not config.NEIGHBORS_PATH:
     model.eval()
     
 
-    transforms = get_infer_list(input_size=config.INPUT_SIZE)
+    # transforms = get_infer_list(input_size=config.INPUT_SIZE)
 
-    train_dataset = TrainImageDataset(data_csv,
-                                config.TRAIN_IMAGES_PATH,
-                                transform=transforms)
+    # train_dataset = TrainImageDataset(data_csv,
+    #                             config.TRAIN_IMAGES_PATH,
+    #                             transform=transforms)
     
-    test_dataset = TestImageDataset(config.TEST_IMAGES_PATH,
-                                transform=transforms)
+    # test_dataset = TestImageDataset(config.TEST_IMAGES_PATH,
+    #                             transform=transforms)
 
     # train_dataset = DummyDataset(config.INPUT_SIZE, num_samples=100)
 
     # test_dataset = DummyDataset2(config.INPUT_SIZE, num_samples=50)
 
-    train_loader = DataLoader(train_dataset,
-                            batch_size=config.BATCH_SIZE,
-                            shuffle=False,
-                            num_workers=os.cpu_count(),
-                            pin_memory=False)
+    # train_loader = DataLoader(train_dataset,
+    #                         batch_size=config.BATCH_SIZE,
+    #                         shuffle=False,
+    #                         num_workers=os.cpu_count(),
+    #                         pin_memory=False)
 
-    test_loader = DataLoader(test_dataset,
-                            batch_size=config.BATCH_SIZE,
-                            shuffle=False,
-                            num_workers=os.cpu_count(),
-                            pin_memory=False)
+    # test_loader = DataLoader(test_dataset,
+    #                         batch_size=config.BATCH_SIZE,
+    #                         shuffle=False,
+    #                         num_workers=os.cpu_count(),
+    #                         pin_memory=False)
+    
+    
+    pipelines = {
+    'image': [SimpleRGBImageDecoder(), ToTensor(), Convert(torch.float32), ToTorchImage(), ToDevice(device))],
+    'label': [IntDecoder(), ToDevice(device)]
+    }
+
+    train_loader = Loader(config.DATA_PATH, batch_size=config.BACKBONE_PARAMS, num_workers=os.cpu_count()-1,
+                order=OrderOption.SEQUENTIAL, pipelines=pipelines, os_cache=True, distributed=True)
+    
+    test_loader = Loader(config.DATA_PATH, batch_size=config.BACKBONE_PARAMS, num_workers=os.cpu_count()-1,
+                order=OrderOption.SEQUENTIAL, pipelines=pipelines, os_cache=True, distributed=True)
 
     target_to_id = json.loads(open('./data/json/target_to_id.json', 'r').read())
     target_to_id = {int(key): target_to_id[key] for key in target_to_id}
@@ -100,10 +114,10 @@ if not config.NEIGHBORS_PATH:
     train_embeddings = []
 
     for images, targets in tqdm(train_loader):
-        images = images.to(device)
-        embeddings = model(images).detach().cpu().numpy()
+        # images = images.to(device)
+        global_feats, local_feats, arc_feats = model(images).detach().cpu().numpy()
         
-        train_embeddings.append(embeddings)
+        train_embeddings.append(arc_feats)
         train_targets.append(targets)
 
     train_embeddings = np.squeeze(np.concatenate(train_embeddings))
@@ -123,8 +137,8 @@ if not config.NEIGHBORS_PATH:
 
     for images, img_names in tqdm(test_loader):
         images = images.to(device)
-        embeddings = model(images).detach().cpu().numpy()
-        distances, idxs = neigh.kneighbors(embeddings, config.KNN_NUM, return_distance=True)
+        global_feats, local_feats, arc_feats = model(images).detach().cpu().numpy()
+        distances, idxs = neigh.kneighbors(arc_feats, config.KNN_NUM, return_distance=True)
         test_ids.append(img_names)
         test_nn_idxs.append(idxs)
         test_nn_distances.append(distances)
@@ -184,7 +198,41 @@ for x in tqdm(predictions):
         predictions[x] = predictions[x][:5]
     predictions[x] = ' '.join(predictions[x])
 
+
+# predictions = []
+
+# for image, frame in tqdm(test_df.groupby('image')):
+#     img_predictions = []
+
+#     for i, pred in frame.iterrows():
+#         if len(img_predictions) == 5:
+#             break
+#         if pred['target'] in exclude:
+#             continue
+#         if pred['confidence'] > 0.49:
+#             img_predictions.append(pred['target'])
+#         else:
+#             if 'new_individual' in img_predictions:
+#                 img_predictions.append(pred['target'])
+#             else:
+#                 img_predictions.append('new_individual')
+                
+#         if len(img_predictions) < 5:
+#             num_append = 5 - len(img_predictions)
+#             for i in range(num_append):
+#                 img_predictions.append(sample_list[i])  
+        
+#         if img_predictions[0] == 'new_individual':
+#             n_new += 1
+#     predictions.append({'image': image,
+#                          'predictions': ' '.join(img_predictions)})
+
+
+# predictions = pd.DataFrame(predictions)
+
 print(f'[INFO] New individual share {round(n_new / len(predictions), 3)}')
+predictions.to_csv('submission.csv', index=False)
+    
 
 predictions = pd.Series(predictions).reset_index()
 predictions.columns = ['image','predictions']

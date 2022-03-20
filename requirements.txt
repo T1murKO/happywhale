@@ -1,9 +1,0 @@
-imgaug
-scikit-learn
-jupyter
-matplotlib
-numpy
-pandas
-Pillow
-tqdm
-opencv-python

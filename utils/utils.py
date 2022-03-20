@@ -2,21 +2,13 @@ import random
 import os
 import numpy as np
 import torch
-import torch.distributed as dist
+
 
 def set_seed(seed):
     random.seed(seed)
     np.random.seed(seed)
     os.environ['PYTHONHASHSEED'] = str(seed)
     torch.manual_seed(seed)
-
-
-def setup_distributed(rank, world_size):
-    os.environ['MASTER_ADDR'] = 'localhost'
-    os.environ['MASTER_PORT'] = '12355'
-    dist.init_process_group("nccl", rank=rank, world_size=world_size)
-
-    torch.cuda.set_device(rank)
     
 
 class BatchNormXd(torch.nn.modules.batchnorm._BatchNorm):

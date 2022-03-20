@@ -1,9 +1,29 @@
+from this import d
 import numpy as np
+
+class WeightDecayScheduler():
+    def __init__(self):
+        pass
+    
+    def __call__(epoch):
+        if epoch < 8:
+            decay = 1e-5
+        elif epoch < 16:
+            decay = 1e-4
+        elif epoch < 20:
+            decay = 5e-4
+        elif epoch < 28:
+            decay = 1e-3
+        elif epoch < 36:
+            decay = 5e-3
+        elif epoch < 50:
+            decay = 1e-2
+        
+        return decay
 
 
 class LrDecayScheduler():
     def __init__(self, base_lr=0.0001, decay=0.9, step=1):
-        # super(DecayScheduler, self).__init__()
         self.step  = step
         self.decay = decay
         self.base_lr = base_lr
