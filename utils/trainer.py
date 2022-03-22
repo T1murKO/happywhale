@@ -10,9 +10,10 @@ class Trainer():
     def __init__(self, criterion = None,
                  optimizer = None,
                  device = None,
+                 scaler=None,
                  start_epoch=0,
                  lr_scheduler=None,
-                 wd_sceduler=None,
+                 wd_scheduler=None,
                  augmentator=None,
                  save_path=None,
                  log_step=10,
@@ -23,18 +24,18 @@ class Trainer():
         self.device = device
         self.start_epoch = start_epoch
         self.lr_scheduler = lr_scheduler
-        self.wd_sceduler = wd_sceduler
+        self.wd_scheduler = wd_scheduler
         self.augmentator = augmentator
         
         self.log_step = log_step
         self.is_distributed = is_distributed
         
         
-        if not os.path.exists(save_path) and save_path is not None:
+        if save_path is not None and not os.path.exists(save_path):
             os.mkdir(save_path)
         
         self.save_path = save_path
-        self.scaler = torch.cuda.amp.GradScaler()
+        self.scaler = scaler
 
         
         
@@ -129,10 +130,10 @@ class Trainer():
                     
             if self.wd_sceduler is not None:
                 for g in self.optimizer.param_groups:
-                    g['weight_decay'] = self.wd_sceduler(epoch)
+                    g['weight_decay'] = self.wd_scheduler(epoch-1)
             
             if self.augmentator is None:
-                self.augmentator.update_augmentation_list(epoch)
+                self.augmentator.update_augmentation_list(epoch-1)
             
             model.train()
             self.log({'Epoch ': epoch}, only_main_device=True)

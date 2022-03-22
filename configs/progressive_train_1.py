@@ -1,7 +1,7 @@
 class config:
     SEED = 42
     
-    DATA_PATH = '/root/kaggle/happywhale/data/seg_train0.beton'
+    DATA_PATH = '/root/kaggle/happywhale/train_1.beton'
     SAVE_PATH = '/root/kaggle/effnetv2_m'
     
     EMBED_DIM = 512
@@ -29,7 +29,7 @@ class config:
     POOLING_PARAMS = {}
     
     
-    SCHEDULER_NAME = 'ramp'
+    LR_SCHEDULER_NAME = 'ramp'
     LR_SCHEDULER_PARAMS = {'lr_start': 0.000001,
                         'lr_max': 0.0001,
                         'lr_min': 0.00001,
@@ -49,7 +49,7 @@ class config:
                                 'hue': ((0, -0.01), (0, 0.01)),
                                 'p': (0, 0.35)},
                     
-                    'thin_plate_spline': {'scale': (0, 0.12),
+                    'thin_plate_spline': {'scale': (0.012, 0.12),
                                         'p': (0, 0.1)},
                     
                     'rotation': {'degrees': ((0, -7), (0, 7)),

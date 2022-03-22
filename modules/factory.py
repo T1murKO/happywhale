@@ -105,12 +105,12 @@ def get_pooling(pool_name='gem', pool_params={}):
     return pool
     
     
-def get_scheduler(scheduler_name='ramp', batch_size=32, scheduler_params={}):
+def get_scheduler(scheduler_name='ramp', scheduler_params={}):
     
     if scheduler_name == 'ramp':
-        schduler = LrRampScheduler(batch_size, **scheduler_params)
+        schduler = LrRampScheduler(**scheduler_params)
     elif scheduler_name == 'decay':
-        schduler = LrDecayScheduler(batch_size, **scheduler_params)
+        schduler = LrDecayScheduler(**scheduler_params)
     
     else:
         assert False, f'Error, unknown pooling name {scheduler_name}'

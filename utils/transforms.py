@@ -1,4 +1,4 @@
-import imgaug.augmenters as iaa
+# import imgaug.augmenters as iaa
 from torchvision import transforms as T
 import torch
 from kornia.augmentation import *
@@ -146,7 +146,6 @@ class ProgressiveAugmenter(nn.Module):
                             scale_coef))
         
         
-        
         self.aug_list = AugmentationSequential(
             Resize((resolution, resolution)),
             RandomHorizontalFlip(p=0.5),
@@ -159,6 +158,7 @@ class ProgressiveAugmenter(nn.Module):
                         hue=(hue_min, hue_max),
                         p=color_jitter_p),
             
+
             AugmentationSequential(RandomThinPlateSpline(scale=th_plate_s, p=th_plate_p),
                                    RandomRotation(degrees=(rotation_degree_min, rotation_degree_max), p=rotation_p),
                                    RandomPerspective(distortion_scale=perspective_s, p=perspective_p),
