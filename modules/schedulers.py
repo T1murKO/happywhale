@@ -5,7 +5,7 @@ class WeightDecayScheduler():
     def __init__(self):
         pass
     
-    def __call__(epoch):
+    def __call__(self, epoch):
         if epoch < 8:
             decay = 1e-5
         elif epoch < 16:
