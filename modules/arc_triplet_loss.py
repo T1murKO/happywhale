@@ -47,7 +47,7 @@ class ArcTripletLoss(nn.Module):
   def forward(self, global_feats, local_feats, logits, targets):
         triplet_loss = self.global_loss(TripletLoss(margin=self.margin), global_feats, targets)[0] + \
                       self.local_loss(TripletLoss(margin=self.margin), local_feats, targets)[0]
-                      
+        
         arc_loss = self.arc_criterion(logits, targets)
         
         return triplet_loss + arc_loss

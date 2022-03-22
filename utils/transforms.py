@@ -11,7 +11,6 @@ class ProgressiveAugmenter(nn.Module):
         super().__init__()
         self.aug_setttings = aug_settings
         self.stage_len = aug_settings['epochs_max'] // aug_settings['stages_num']
-        self.update_augmentation_list(0)
          
        
     @staticmethod
@@ -144,7 +143,6 @@ class ProgressiveAugmenter(nn.Module):
         resolution = round(self.inrpolate_value(s['resolution']['min_res'],
                             s['resolution']['max_res'],
                             scale_coef))
-        
         
         self.aug_list = AugmentationSequential(
             Resize((resolution, resolution)),

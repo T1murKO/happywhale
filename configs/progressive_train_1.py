@@ -2,23 +2,22 @@ class config:
     SEED = 42
     
     DATA_PATH = '/root/kaggle/happywhale/train_1.beton'
-    SAVE_PATH = '/root/kaggle/effnetv2_m'
+    SAVE_PATH = '/root/kaggle/happywhale/effnetv2_m'
     
     EMBED_DIM = 512
     CLASS_NUM = 15587
     EPOCHES_NUM = 20
-    BATCH_SIZE = 42
+    BATCH_SIZE = 92
     
-    IS_RESUME = False
-    LOAD_PATH = None
-    
-    START_EPOCH = 0
+    IS_RESUME = True
+    LOAD_PATH = '/root/kaggle/happywhale/effnetv2_m/epoch_16_model.pt'
+    START_EPOCH = 16
    
     
     BACKBONE_NAME = 'effnetv2_m'
     BACKBONE_PARAMS = {'pretrained': True}
     
-    TRIPLET_MARGIN = 0.2
+    TRIPLET_MARGIN = 0.225
     
     HEAD_NAME = 'adacos'
     HEAD_PARAMS = {'fixed_scale': False,

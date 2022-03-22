@@ -1,3 +1,4 @@
+import this
 from utils.trainer import Trainer
 from configs.progressive_train_1 import config
 import torch
@@ -7,7 +8,7 @@ import json
 from utils import set_seed
 from utils.transforms import ProgressiveAugmenter
 from ffcv.fields.decoders import IntDecoder, SimpleRGBImageDecoder
-from ffcv.transforms import ToTensor, ToDevice, ToTorchImage, Convert
+from ffcv.transforms import ToTensor, ToDevice, ToTorchImage, Convert, Squeeze
 from ffcv.loader import Loader, OrderOption
 from modules.factory import get_backbone,\
                         get_pooling, \
@@ -41,11 +42,11 @@ def train(gpu_rank, world_size):
     augmenter = ProgressiveAugmenter(config.AUG_SETTINGS)
     
     pipelines = {
-    'image': [SimpleRGBImageDecoder(), ToTensor(), Convert(torch.float32), ToTorchImage(), augmenter],
-    'label': [IntDecoder()]
+    'image': [SimpleRGBImageDecoder(), ToTensor(), Convert(torch.float32), ToTorchImage(), ToDevice(torch.device(this_device)), augmenter],
+    'label': [IntDecoder(), ToTensor(), Squeeze(), ToDevice(torch.device(this_device))]
     }
 
-    train_loader = Loader(config.DATA_PATH, batch_size=config.BACKBONE_PARAMS, num_workers=os.cpu_count()-1,
+    train_loader = Loader(config.DATA_PATH, batch_size=config.BATCH_SIZE, num_workers=os.cpu_count()-1,
                 order=OrderOption.SEQUENTIAL, pipelines=pipelines, os_cache=True, distributed=True)
     
     
@@ -56,7 +57,12 @@ def train(gpu_rank, world_size):
     model = Model(backbone, pooling, head, embed_dim=config.EMBED_DIM, backbone_dim=backbone_dim).to(gpu_rank)
     
     model = nn.SyncBatchNorm.convert_sync_batchnorm(model)
-    model = DistributedDataParallel(model, device_ids=[gpu_rank], find_unused_parameters=True)
+
+    if config.IS_RESUME:
+        model.load_state_dict(torch.load(config.LOAD_PATH))
+        model.to(gpu_rank)
+
+    model = DistributedDataParallel(model, device_ids=[gpu_rank], find_unused_parameters=False)
     criterion = ArcTripletLoss(margin=config.TRIPLET_MARGIN)
     lr_scheduler = get_scheduler(config.LR_SCHEDULER_NAME,config.LR_SCHEDULER_PARAMS)
     wd_scheduler = WeightDecayScheduler()
@@ -73,19 +79,19 @@ def train(gpu_rank, world_size):
                     device=gpu_rank,
                     save_path=config.SAVE_PATH,
                     start_epoch=config.START_EPOCH,
+                    augmenter=augmenter,
                     lr_scheduler=lr_scheduler,
                     wd_scheduler=wd_scheduler)
 
     print(f'[INFO] Training started GPU #: {gpu_rank}')
+
     trainer.run(model, train_loader,
-                epochs=config.EPOCHES_NUM)
+                epochs_num=config.EPOCHES_NUM)
 
 
 
 if __name__ == '__main__':
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print(device.type)
-
     
     assert device.type == 'cuda', 'No GPU Asselerator detected'
     NUM_GPU = torch.cuda.device_count()
@@ -107,7 +113,6 @@ if __name__ == '__main__':
     
     print('[INFO] Training config', json.dumps(model_config, indent=3, sort_keys=True))
     
-    print('NUM_GPU:', NUM_GPU)
     mp.spawn(
         train,
         args=(NUM_GPU,),

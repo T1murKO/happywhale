@@ -3,10 +3,15 @@ import torch
 import os
 from os.path import join
 import torch.distributed as dist
+from tqdm import tqdm
+from threading import Lock
 
 
 class Trainer():
-    
+    epoch_loss = 0.0
+    epoch_acc = 0.0
+    mutex = Lock()
+
     def __init__(self, criterion = None,
                  optimizer = None,
                  device = None,
@@ -14,7 +19,7 @@ class Trainer():
                  start_epoch=0,
                  lr_scheduler=None,
                  wd_scheduler=None,
-                 augmentator=None,
+                 augmenter=None,
                  save_path=None,
                  log_step=10,
                  is_distributed=True):
@@ -25,7 +30,7 @@ class Trainer():
         self.start_epoch = start_epoch
         self.lr_scheduler = lr_scheduler
         self.wd_scheduler = wd_scheduler
-        self.augmentator = augmentator
+        self.augmenter = augmenter
         
         self.log_step = log_step
         self.is_distributed = is_distributed
@@ -45,16 +50,11 @@ class Trainer():
         return acc
     
         
-    def train_epoch(self, model, train_loader):
-        epoch_loss = 0.0
-        epoch_acc = 0.0
-        batch_num = len(train_loader)
-        for it, data in enumerate(train_loader):
-            
-            images, targets = data
+    def train_epoch(self, model, train_loader, epoch):
+        pbar = tqdm(train_loader, desc="Epoch" + " [TRAIN] " + str(epoch))
+        for it, (images, targets) in enumerate(pbar):
             # images = images.to(self.device)
             # targets = targets.to(self.device)
-            
             with torch.cuda.amp.autocast():
                 global_feat, local_feat, logits = model(images, targets)
                 loss = self.criterion(global_feat, local_feat, logits, targets)
@@ -63,21 +63,22 @@ class Trainer():
             self.scaler.scale(loss).backward()
             self.scaler.step(self.optimizer)
             self.scaler.update()
+
+            batch_loss = loss.item()
+            batch_acc = self.accuracy(logits, targets)
+            epoch_loss, epoch_acc  = Trainer.update_metrics(batch_loss, batch_acc)
+
+            log_content = {'loss' : round(float(epoch_loss/(it+1)), 4),
+                           'acc' : round(float(epoch_acc/(it+1)), 4)}
+
+            pbar.set_postfix(log_content)
             
-            epoch_loss += loss.item()
-            epoch_acc += self.accuracy(logits, targets)
-            
-            log_content = {'B#': {it+1}/{batch_num},
-                           'loss' : round(float(epoch_loss/(it+1)), 4),
-                           'Acc' : round(float(epoch_acc/(it+1)), 4)}
-            
-            if (it + 1) % self.log_ste == 0:
+            if (it + 1) % self.log_step == 0:
                     self.log(log_content)
             
-
         return epoch_loss / len(train_loader), epoch_acc / len(train_loader)
     
-    def valid_epoch(self, model, valid_loader):
+    def valid_epoch(self, model, valid_loader, epoch):
         epoch_loss = 0.0
         epoch_acc = 0.0
         batch_num = len(valid_loader)
@@ -91,21 +92,37 @@ class Trainer():
                     global_feat, local_feat, logits = model(images, targets)
                     loss = self.criterion(global_feat, local_feat, logits, targets)
             
-            epoch_loss += loss.item()
-            epoch_acc += self.accuracy(logits, targets)
-            
-            log_content = {'B#': {it+1}/{batch_num},
-                           'loss' : round(float(epoch_loss/(it+1)), 4),
+            log_content = {'loss' : round(float(epoch_loss/(it+1)), 4),
                            'Acc' : round(float(epoch_acc/(it+1)), 4)}
             
             if (it + 1) % self.log_ste == 0:
                     self.log(log_content, is_train=False)
-            
+        
         return epoch_loss / len(valid_loader), epoch_acc / len(valid_loader)
+    
+    @staticmethod
+    def update_metrics(loss, acc):
+        Trainer.mutex.acquire()
+        try:
+            Trainer.epoch_loss += loss
+            Trainer.epoch_acc += acc
+
+            return Trainer.epoch_loss, Trainer.epoch_acc
+        finally:
+            Trainer.mutex.release()
+    
+    @staticmethod
+    def wipe_metrics():
+        Trainer.mutex.acquire()
+        try:
+            Trainer.epoch_loss = 0
+            Trainer.epoch_acc = 0
+        finally:
+            Trainer.mutex.release()
 
 
     def log(self, content, is_train=True, only_main_device=False):
-        if only_main_device and self.gpu != 0:
+        if only_main_device and self.device != 0:
             return
         
         if not only_main_device:
@@ -116,7 +133,7 @@ class Trainer():
         if self.is_distributed and self.device != 0: return
         
         with open(join(self.save_path, 'train_log.txt' if is_train else 'val_log.txt'), 'a+') as f:
-            f.write(log_str)
+            f.write(log_str + '\n')
     
     
     def run(self, model, train_loader, valid_loader=None, epochs_num=1):
@@ -128,18 +145,18 @@ class Trainer():
                     g['lr'] = self.lr_scheduler(epoch)
                 
                     
-            if self.wd_sceduler is not None:
+            if self.wd_scheduler is not None:
                 for g in self.optimizer.param_groups:
                     g['weight_decay'] = self.wd_scheduler(epoch-1)
             
-            if self.augmentator is None:
-                self.augmentator.update_augmentation_list(epoch-1)
+            if self.augmenter is not None:
+                self.augmenter.update_augmentation_list(epoch-1)
             
             model.train()
             self.log({'Epoch ': epoch}, only_main_device=True)
-            avg_train_loss, avg_train_acc = self.train_epoch(model, train_loader)
+            avg_train_loss, avg_train_acc = self.train_epoch(model, train_loader, epoch)
+            Trainer.wipe_metrics()
             
-            if self.is_distributed: self.cleanup_distributed()
                 
             if self.save_path is not None and self.is_distributed and self.device == 0:
                 torch.save(model.module.state_dict(), join(self.save_path, f'epoch_{epoch}_model.pt'))
@@ -147,6 +164,8 @@ class Trainer():
             if valid_loader is not None:
                 model.eval()
                 avg_valid_loss, avg_valid_acc = self.valid_epoch(model, valid_loader)
+            
+        if self.is_distributed: self.cleanup_distributed()
             
         return model
     
